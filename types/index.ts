@@ -43,6 +43,7 @@ export interface Issue {
   longitude: number;
   location_address: string | null;
   upvotes: number;
+  comment_count: number;
   created_at: string;
   accepted_at: string | null;
   resolved_at: string | null;

@@ -84,7 +84,7 @@ export function IssueCard({ issue, highlight = false }: { issue: Issue; highligh
 
         <div className="flex items-center justify-between gap-2 border-t border-[#F3F4F6] pt-2">
           <VoteButton issueId={issue.id} initialUpvotes={issue.upvotes} size="sm" />
-          <CommentButton issueId={issue.id} size="sm" />
+          <CommentButton issueId={issue.id} count={issue.comment_count} size="sm" />
           <ShareButton title={issue.title} url={`/issue/${issue.id}`} size="sm" />
         </div>
       </div>
