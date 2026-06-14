@@ -27,7 +27,7 @@ export function CommentButton({
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-full border border-line bg-card font-bold text-muted transition hover:border-sky hover:text-sky ${padding}`}
     >
-      <MessageCircle size={size === 'sm' ? 16 : 18} /> {count > 0 ? count : 'Comment'}
+      <MessageCircle size={size === 'sm' ? 16 : 18} /> {count} {count === 1 ? 'Comment' : 'Comments'}
     </button>
   );
 }

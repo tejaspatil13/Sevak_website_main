@@ -97,7 +97,7 @@ export default async function IssueDetailPage({ params }: { params: { id: string
             href="#comments"
             className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-2 text-[13px] font-bold text-muted transition hover:border-sky hover:text-sky"
           >
-            <MessageCircle size={16} /> {comments.length > 0 ? comments.length : 'Comment'}
+            <MessageCircle size={16} /> {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
           </a>
           <ShareButton title={issue.title} />
         </div>
