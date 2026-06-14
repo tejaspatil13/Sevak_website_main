@@ -9,7 +9,7 @@ import { VoteButton } from './VoteButton';
 import { CommentButton } from './CommentButton';
 import { ShareButton } from './ShareButton';
 
-export function IssueCard({ issue }: { issue: Issue }) {
+export function IssueCard({ issue, highlight = false }: { issue: Issue; highlight?: boolean }) {
   const reporterName = issue.reporter_name ?? issue.citizen?.name ?? 'Citizen';
   const ward = wardLabel(issue.ward_id);
   const showSevakStrip =
@@ -18,7 +18,9 @@ export function IssueCard({ issue }: { issue: Issue }) {
   return (
     <Link
       href={`/issue/${issue.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-line bg-card shadow-card transition hover:-translate-y-0.5 hover:shadow-lg"
+      className={`group flex flex-col overflow-hidden rounded-xl border bg-card shadow-card transition hover:-translate-y-0.5 hover:shadow-lg ${
+        highlight ? 'border-sky ring-2 ring-sky/40' : 'border-line'
+      }`}
     >
       {/* user row */}
       <div className="flex items-center gap-2.5 p-3 pb-2">

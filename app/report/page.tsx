@@ -14,6 +14,7 @@ import { findNearbyIssues } from '@/lib/data';
 import { getAnonIdentity } from '@/lib/anon';
 import { NASHIK_WARDS, findWardForLocation, getWardByNumber, wardIdFromNumber } from '@/lib/wards';
 import { getCurrentLocation, geoErrorMessage, GeoErrorReason } from '@/lib/geolocation';
+import { compressImage } from '@/lib/image';
 import { Issue, IssueCategory, CATEGORY_LABELS, CATEGORY_STYLE } from '@/types';
 
 const CATEGORY_OPTIONS: IssueCategory[] = [
@@ -60,11 +61,12 @@ function ReportForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    const compressed = await compressImage(file);
+    setPhotoFile(compressed);
+    setPhotoPreview(URL.createObjectURL(compressed));
   };
 
   const detectLocation = () => {
@@ -164,7 +166,7 @@ function ReportForm() {
         .single();
       if (insertError) throw insertError;
 
-      router.push(`/issue/${data.id}`);
+      router.push(`/feed?posted=${data.id}`);
     } catch (err) {
       setError(
         err instanceof Error

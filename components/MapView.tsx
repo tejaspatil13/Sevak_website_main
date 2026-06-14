@@ -112,6 +112,43 @@ function LocateControl({
   );
 }
 
+/**
+ * Blocks map panning/zooming until the user taps once. Without this, a vertical swipe that
+ * starts on the map pans the map instead of scrolling the page — especially painful on mobile
+ * where the map can fill most of the viewport.
+ */
+function GestureGate({ active, onActivate }: { active: boolean; onActivate: () => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (active) {
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+    } else {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+    }
+  }, [active, map]);
+
+  if (active) return null;
+
+  return (
+    <div
+      onClick={onActivate}
+      onTouchStart={onActivate}
+      className="absolute inset-0 z-[700] flex cursor-pointer items-end justify-center pb-3"
+    >
+      <span className="rounded-full bg-black/60 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm">
+        Tap to explore the map
+      </span>
+    </div>
+  );
+}
+
 /** Reports the map's current zoom level to the parent so ward badges can resize. */
 function ZoomWatcher({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
   const map = useMap();
@@ -151,6 +188,7 @@ export function MapView({ issues }: { issues: MapIssue[] }) {
   const [locationError, setLocationError] = useState<GeoErrorReason | null>(null);
   const [selectedWard, setSelectedWard] = useState<number | null>(null);
   const [zoom, setZoom] = useState(13);
+  const [mapInteractive, setMapInteractive] = useState(false);
 
   const requestLocation = (): Promise<[number, number] | null> =>
     getCurrentLocation()
@@ -181,7 +219,7 @@ export function MapView({ issues }: { issues: MapIssue[] }) {
 
   return (
     <div className="flex w-full flex-col gap-3">
-      <div className="isolate relative h-[70vh] min-h-[420px] w-full overflow-hidden rounded-xl border border-line">
+      <div className="isolate relative h-[50vh] min-h-[320px] w-full overflow-hidden rounded-xl border border-line">
         <MapContainer center={center} zoom={13} scrollWheelZoom className="h-full w-full">
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -268,6 +306,7 @@ export function MapView({ issues }: { issues: MapIssue[] }) {
           })}
 
           <LocateControl userLocation={userLocation} onLocate={requestLocation} />
+          <GestureGate active={mapInteractive} onActivate={() => setMapInteractive(true)} />
         </MapContainer>
 
         <p className="pointer-events-none absolute bottom-2 left-2 z-[400] flex items-center gap-1 rounded-lg bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-muted shadow-sm">

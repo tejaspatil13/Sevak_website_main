@@ -3,7 +3,7 @@ import { Footer } from '@/components/Footer';
 import { MapClient } from '@/components/MapClient';
 import { getMapIssues } from '@/lib/data';
 
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
 
 export default async function MapPage() {
   const issues = await getMapIssues();

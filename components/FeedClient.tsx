@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { FileText, MapPin } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { CheckCircle2, FileText, MapPin } from 'lucide-react';
 import { IssueCard } from './IssueCard';
 import { NASHIK_WARDS, distanceKm, findWardForLocation } from '@/lib/wards';
 import { getCurrentLocation, geoErrorMessage, GeoErrorReason } from '@/lib/geolocation';
@@ -19,6 +20,10 @@ const TABS: { value: Tab; label: string }[] = [
 ];
 
 export function FeedClient({ issues }: { issues: Issue[] }) {
+  const searchParams = useSearchParams();
+  const postedId = searchParams.get('posted');
+  const postedIssue = postedId ? issues.find((i) => i.id === postedId) : undefined;
+
   const [tab, setTab] = useState<Tab>('for_you');
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [userWardNum, setUserWardNum] = useState<number | null>(null);
@@ -46,60 +51,76 @@ export function FeedClient({ issues }: { issues: Issue[] }) {
 
   const ranked = useMemo(() => {
     const now = Date.now();
+    let result: Issue[];
 
     if (tab === 'recent') {
-      return [...issues].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      result = [...issues].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (tab === 'most_voted') {
+      result = [...issues].sort((a, b) => b.upvotes - a.upvotes || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (tab === 'nearby') {
+      result = !userLocation
+        ? []
+        : [...issues].sort(
+            (a, b) =>
+              distanceKm(userLocation[0], userLocation[1], a.latitude, a.longitude) -
+              distanceKm(userLocation[0], userLocation[1], b.latitude, b.longitude)
+          );
+    } else if (tab === 'my_ward') {
+      result = !activeWard
+        ? []
+        : issues
+            .filter((i) => wardNumber(i.ward_id) === activeWard)
+            .sort((a, b) => b.upvotes - a.upvotes || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else {
+      // For You — blends nearby, ward match, recency, votes, underexposed, and discovery.
+      result = [...issues]
+        .map((issue) => {
+          let score = 0;
+
+          if (userLocation) {
+            const km = distanceKm(userLocation[0], userLocation[1], issue.latitude, issue.longitude);
+            score += Math.max(0, 1 - km / 5) * 0.3;
+          }
+
+          if (activeWard && wardNumber(issue.ward_id) === activeWard) score += 0.25;
+
+          const hoursOld = (now - new Date(issue.created_at).getTime()) / 3_600_000;
+          score += Math.max(0, 1 - hoursOld / 72) * 0.2;
+
+          score += Math.min(issue.upvotes / 50, 1) * 0.2;
+
+          if (issue.upvotes < 3 && hoursOld > 6) score += 0.15;
+
+          score += (discoverySeed.get(issue.id) ?? 0) * 0.15;
+
+          return { issue, score };
+        })
+        .sort((a, b) => b.score - a.score)
+        .map((r) => r.issue);
     }
 
-    if (tab === 'most_voted') {
-      return [...issues].sort((a, b) => b.upvotes - a.upvotes || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // Pin the issue the user just reported to the top, so they see it immediately.
+    if (postedIssue) {
+      result = [postedIssue, ...result.filter((i) => i.id !== postedIssue.id)];
     }
 
-    if (tab === 'nearby') {
-      if (!userLocation) return [];
-      return [...issues].sort(
-        (a, b) =>
-          distanceKm(userLocation[0], userLocation[1], a.latitude, a.longitude) -
-          distanceKm(userLocation[0], userLocation[1], b.latitude, b.longitude)
-      );
-    }
-
-    if (tab === 'my_ward') {
-      if (!activeWard) return [];
-      return issues
-        .filter((i) => wardNumber(i.ward_id) === activeWard)
-        .sort((a, b) => b.upvotes - a.upvotes || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }
-
-    // For You — blends nearby, ward match, recency, votes, underexposed, and discovery.
-    return [...issues]
-      .map((issue) => {
-        let score = 0;
-
-        if (userLocation) {
-          const km = distanceKm(userLocation[0], userLocation[1], issue.latitude, issue.longitude);
-          score += Math.max(0, 1 - km / 5) * 0.3;
-        }
-
-        if (activeWard && wardNumber(issue.ward_id) === activeWard) score += 0.25;
-
-        const hoursOld = (now - new Date(issue.created_at).getTime()) / 3_600_000;
-        score += Math.max(0, 1 - hoursOld / 72) * 0.2;
-
-        score += Math.min(issue.upvotes / 50, 1) * 0.2;
-
-        if (issue.upvotes < 3 && hoursOld > 6) score += 0.15;
-
-        score += (discoverySeed.get(issue.id) ?? 0) * 0.15;
-
-        return { issue, score };
-      })
-      .sort((a, b) => b.score - a.score)
-      .map((r) => r.issue);
-  }, [tab, issues, userLocation, activeWard, discoverySeed]);
+    return result;
+  }, [tab, issues, userLocation, activeWard, discoverySeed, postedIssue]);
 
   return (
     <div>
+      {postedIssue && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#BBF7D0] bg-[#ECFDF5] p-3.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#059669]">
+            <CheckCircle2 size={18} />
+          </div>
+          <div>
+            <p className="text-[13px] font-bold text-ink">Your issue has been reported!</p>
+            <p className="text-[12px] text-muted">It&apos;s now live below — track its status anytime.</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-1.5">
         {TABS.map((t) => (
           <button
@@ -183,7 +204,7 @@ export function FeedClient({ issues }: { issues: Issue[] }) {
       ) : (
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ranked.map((issue) => (
-            <IssueCard key={issue.id} issue={issue} />
+            <IssueCard key={issue.id} issue={issue} highlight={issue.id === postedId} />
           ))}
         </div>
       )}

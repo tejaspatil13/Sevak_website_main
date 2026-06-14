@@ -3,7 +3,7 @@ import { Footer } from '@/components/Footer';
 import { FeedClient } from '@/components/FeedClient';
 import { getIssues } from '@/lib/data';
 
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
 
 export default async function FeedPage() {
   const issues = await getIssues({ limit: 150 });
