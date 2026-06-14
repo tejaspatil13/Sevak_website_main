@@ -3,14 +3,21 @@
 
 const STORAGE_KEY = 'sevak_anon_identity';
 
-const ADJECTIVES = ['Quiet', 'Brave', 'Curious', 'Swift', 'Calm', 'Bold', 'Cheerful', 'Gentle', 'Lively', 'Wise'];
-const NOUNS = ['Tiger', 'Sparrow', 'Falcon', 'Otter', 'Panther', 'Eagle', 'Dolphin', 'Fox', 'Heron', 'Lynx'];
+// Two distinct adjectives are combined with "Cockroach" — 33 * 32 = 1056 possible names.
+const ADJECTIVES = [
+  'Lazy', 'Unemployed', 'Jobless', 'Idle', 'Useless', 'Worthless', 'Freeloading',
+  'Good-for-Nothing', 'Habitual', 'Professional', 'Activist', 'Chronic', 'Permanent',
+  'Full-Time', 'Part-Time', 'Certified', 'Official', 'Senior', 'Junior', 'Retired',
+  'Aspiring', 'World-Class', 'Award-Winning', 'Self-Proclaimed', 'Card-Carrying',
+  'Couch', 'Sofa', 'Armchair', 'Keyboard', 'Weekend', 'Holiday', 'Tea-Break', 'Sleepy',
+];
+const NOUN = 'Cockroach';
 
 function generateName(): string {
-  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `${adjective} ${noun} ${num}`;
+  const i = Math.floor(Math.random() * ADJECTIVES.length);
+  let j = Math.floor(Math.random() * (ADJECTIVES.length - 1));
+  if (j >= i) j += 1;
+  return `${ADJECTIVES[i]} ${ADJECTIVES[j]} ${NOUN}`;
 }
 
 export function getAnonIdentity(): { name: string } {
